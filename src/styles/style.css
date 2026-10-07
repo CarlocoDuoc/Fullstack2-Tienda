@@ -1,0 +1,119 @@
+/* ===== Paleta de Dino Rancho (sobrescribe las variables de Bootstrap 5.3) ===== */
+:root {
+  --dino-verde: #6dc75f;
+  --dino-verde-oscuro: #5bb24e;
+  --bs-success: #6dc75f;
+  --bs-success-rgb: 109, 199, 95;
+}
+
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--dino-verde);
+  --bs-btn-border-color: var(--dino-verde);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--dino-verde-oscuro);
+  --bs-btn-hover-border-color: var(--dino-verde-oscuro);
+  --bs-btn-focus-shadow-rgb: 109, 199, 95;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--dino-verde-oscuro);
+  --bs-btn-active-border-color: var(--dino-verde-oscuro);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--dino-verde);
+  --bs-btn-disabled-border-color: var(--dino-verde);
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--dino-verde-oscuro);
+  --bs-btn-border-color: var(--dino-verde);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--dino-verde);
+  --bs-btn-hover-border-color: var(--dino-verde);
+  --bs-btn-focus-shadow-rgb: 109, 199, 95;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--dino-verde);
+  --bs-btn-active-border-color: var(--dino-verde);
+}
+
+.text-success {
+  --bs-success-rgb: 91, 178, 78;
+}
+
+/* ===== Layout general ===== */
+.navbar-color {
+  background-color: var(--dino-verde);
+}
+
+.titulo-seccion {
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ===== Banner principal (Home, Nosotros, Detalle de producto) ===== */
+.wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background-color: #c8e0c8;
+  padding: 40px;
+  align-items: center;
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.imagen {
+  width: 100%;
+}
+
+.imagen img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.btn-banner {
+  display: inline-block;
+  padding: 10px 20px;
+  border: 2px solid #000;
+  background-color: #fff;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.btn-banner:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    grid-template-columns: 1fr;
+    padding: 24px 16px;
+  }
+}
+
+/* ===== Tarjetas ===== */
+.card_container {
+  padding-top: 30px;
+}
+
+.imagen-tarjeta {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* ===== Panel de administración ===== */
+.admin-menu .nav-link {
+  color: #212529;
+}
+
+.admin-menu .nav-link.active {
+  background-color: var(--dino-verde);
+  color: #fff;
+}
