@@ -1,102 +1,109 @@
 import { useState } from "react";
-import { Badge, Button, Table } from "react-bootstrap";
+import { Alert, Badge, Button, Form, Table } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import Cargando from "../../components/Cargando";
+import MensajeError from "../../components/MensajeError";
 import ModalConfirmacion from "../../components/ModalConfirmacion";
 import { useAuth } from "../../context/AuthContext";
-import { usuariosDB } from "../../data/db";
-import { useColeccion } from "../../hooks/useColeccion";
+import { useApi } from "../../hooks/useApi";
+import { api } from "../../services/api";
 import { formatearFecha } from "../../utils/formato";
 
 export default function UsuariosAdminPage() {
-  const usuarios = useColeccion(usuariosDB);
-  const { usuario: sesion } = useAuth();
-  const [aEliminar, setAEliminar] = useState(null);
+  const { usuario: yo } = useAuth();
+  const { datos, cargando, error, recargar } = useApi(() => api.usuarios.listar(), []);
+  const [objetivo, setObjetivo] = useState(null);
+  const [errorEliminar, setErrorEliminar] = useState(null);
 
-  const confirmarEliminacion = () => {
-    usuariosDB.eliminar(aEliminar.id);
-    setAEliminar(null);
+  // Cambia el rol (Cliente <-> Administrador) directamente desde la tabla
+  const cambiarRol = async (u, rol) => {
+    try {
+      await api.usuarios.actualizar(u.id, { nombre: u.nombre, usuario: u.usuario, fechaNacimiento: u.fechaNacimiento, rol, estado: u.estado });
+      setErrorEliminar(null);
+      recargar();
+    } catch (e) {
+      setErrorEliminar(e.message);
+    }
+  };
+
+  const eliminar = async () => {
+    try {
+      await api.usuarios.eliminar(objetivo.id);
+      setErrorEliminar(null);
+      recargar();
+    } catch (e) {
+      setErrorEliminar(e.message);
+    }
+    setObjetivo(null);
   };
 
   return (
     <>
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h1 className="h3 fw-bold mb-0">Usuarios</h1>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1 className="h3 mb-0">Usuarios</h1>
         <Button as={Link} to="/admin/usuarios/nuevo" variant="success">
-          + Nuevo usuario
+          Nuevo usuario
         </Button>
       </div>
-
-      <div className="table-responsive bg-white rounded shadow-sm">
-        <Table hover className="align-middle mb-0">
+      {errorEliminar && <Alert variant="danger">{errorEliminar}</Alert>}
+      {cargando && <Cargando />}
+      {error && <MensajeError error={error} onReintentar={recargar} />}
+      {datos && (
+        <Table responsive hover className="align-middle bg-white">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Nombre</th>
-              <th>Correo</th>
-              <th>Fecha de nacimiento</th>
+              <th>Usuario</th>
+              <th>Nacimiento</th>
               <th>Rol</th>
               <th>Estado</th>
-              <th className="text-center">Acciones</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {usuarios.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-3">
-                  No hay usuarios registrados.
+            {datos.map((u) => (
+              <tr key={u.id}>
+                <td className="fw-semibold">{u.nombre} {u.apellidos}</td>
+                <td>{u.usuario}</td>
+                <td>{formatearFecha(u.fechaNacimiento)}</td>
+                <td>
+                  <Form.Select
+                    size="sm"
+                    aria-label={`Rol de ${u.usuario}`}
+                    value={u.rol}
+                    disabled={u.id === yo?.id}
+                    onChange={(e) => cambiarRol(u, e.target.value)}
+                    style={{ minWidth: 150 }}
+                  >
+                    <option value="Cliente">Cliente</option>
+                    <option value="Administrador">Administrador</option>
+                  </Form.Select>
+                </td>
+                <td>
+                  <Badge bg={u.estado === "Activo" ? "success" : "secondary"}>{u.estado}</Badge>
+                </td>
+                <td className="text-end text-nowrap">
+                  <Button as={Link} to={`/admin/usuarios/${u.id}/compras`} size="sm" variant="outline-dark" className="me-1">
+                    Compras
+                  </Button>
+                  <Button as={Link} to={`/admin/usuarios/${u.id}/editar`} size="sm" variant="outline-primary" className="me-1">
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="outline-danger" disabled={u.id === yo?.id} onClick={() => setObjetivo(u)}>
+                    Eliminar
+                  </Button>
                 </td>
               </tr>
-            ) : (
-              usuarios.map((usuario) => {
-                const esPropio = Number(usuario.id) === Number(sesion?.id);
-                return (
-                  <tr key={usuario.id}>
-                    <td>{usuario.id}</td>
-                    <td className="fw-semibold">{usuario.nombre}</td>
-                    <td>{usuario.correo}</td>
-                    <td>{formatearFecha(usuario.fechaNacimiento)}</td>
-                    <td>
-                      <Badge bg={usuario.rol === "Administrador" ? "dark" : "primary"}>{usuario.rol}</Badge>
-                    </td>
-                    <td>
-                      <Badge bg={usuario.estado === "Inactivo" ? "secondary" : "success"}>
-                        {usuario.estado ?? "Activo"}
-                      </Badge>
-                    </td>
-                    <td className="text-center text-nowrap">
-                      <Button
-                        as={Link}
-                        to={`/admin/usuarios/${usuario.id}/editar`}
-                        size="sm"
-                        variant="outline-success"
-                        className="me-1"
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        disabled={esPropio}
-                        title={esPropio ? "No puedes eliminar tu propia cuenta" : undefined}
-                        onClick={() => setAEliminar(usuario)}
-                      >
-                        Eliminar
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+            ))}
           </tbody>
         </Table>
-      </div>
-
+      )}
       <ModalConfirmacion
-        show={Boolean(aEliminar)}
+        show={Boolean(objetivo)}
         titulo="Eliminar usuario"
-        mensaje={aEliminar && `¿Estás seguro de eliminar a ${aEliminar.nombre} (ID ${aEliminar.id})?`}
-        onConfirmar={confirmarEliminacion}
-        onCancelar={() => setAEliminar(null)}
+        mensaje={`¿Seguro que deseas eliminar a "${objetivo?.nombre}"? Sus boletas se conservarán sin cuenta asociada.`}
+        onCancelar={() => setObjetivo(null)}
+        onConfirmar={eliminar}
       />
     </>
   );

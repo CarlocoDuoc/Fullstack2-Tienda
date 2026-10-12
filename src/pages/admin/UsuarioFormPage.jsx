@@ -1,189 +1,123 @@
-import { useState } from "react";
-import { Alert, Button, Card, Form } from "react-bootstrap";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Alert, Button, Col, Form, Row } from "react-bootstrap";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import Cargando from "../../components/Cargando";
 import FormField from "../../components/FormField";
+import MensajeError from "../../components/MensajeError";
 import { useAuth } from "../../context/AuthContext";
-import { usuariosDB } from "../../data/db";
+import { useApi } from "../../hooks/useApi";
 import { useFormulario } from "../../hooks/useFormulario";
-import { useRedireccion } from "../../hooks/useRedireccion";
-import { actualizarUsuario, crearUsuario } from "../../services/usuariosService";
+import { api } from "../../services/api";
 import { validarFormularioUsuarioEditar, validarFormularioUsuarioNuevo } from "../../utils/validaciones";
 
-// Formulario compartido para crear y editar usuarios.
-function UsuarioForm({ usuario }) {
-  const esEdicion = Boolean(usuario);
-  const { usuario: sesion } = useAuth();
-  const redirigir = useRedireccion(1200);
-  const [estado, setEstado] = useState(null);
-
-  // Un administrador no puede quitarse a sí mismo el rol ni desactivarse.
-  const esPropio = esEdicion && Number(usuario.id) === Number(sesion?.id);
-
-  const { valores, errores, tocados, cambiar, tocarTodo, esValido } = useFormulario(
-    {
-      nombre: usuario?.nombre ?? "",
-      correo: usuario?.correo ?? "",
-      fechaNacimiento: usuario?.fechaNacimiento ?? "",
-      ...(esEdicion ? {} : { password: "", confirmPassword: "" }),
-      rol: usuario?.rol ?? "Cliente",
-      estado: usuario?.estado ?? "Activo",
-    },
-    esEdicion ? validarFormularioUsuarioEditar : validarFormularioUsuarioNuevo
-  );
-
-  const enviar = (evento) => {
-    evento.preventDefault();
-    tocarTodo();
-    if (!esValido) {
-      setEstado({ tipo: "danger", mensaje: "Revisa los campos obligatorios." });
-      return;
-    }
-
-    const resultado = esEdicion ? actualizarUsuario(usuario.id, valores) : crearUsuario(valores);
-    if (!resultado.ok) {
-      setEstado({ tipo: "danger", mensaje: resultado.error });
-      return;
-    }
-
-    setEstado({
-      tipo: "success",
-      mensaje: esEdicion ? "Cambios guardados exitosamente. Redirigiendo..." : "Usuario creado con éxito. Redirigiendo...",
-    });
-    redirigir("/admin/usuarios");
-  };
-
-  return (
-    <Card className="shadow-sm border-0">
-      <Card.Header className="bg-success text-white">
-        <h1 className="h4 mb-0">{esEdicion ? `Editar usuario #${usuario.id}` : "Nuevo usuario"}</h1>
-      </Card.Header>
-      <Card.Body className="p-4">
-        <Form noValidate onSubmit={enviar}>
-          <FormField
-            id="nombre"
-            label="Nombre"
-            name="nombre"
-            maxLength={50}
-            required
-            value={valores.nombre}
-            onChange={cambiar}
-            error={errores.nombre}
-            touched={tocados.nombre}
-          />
-          <FormField
-            id="correo"
-            label="Correo electrónico"
-            name="correo"
-            type="email"
-            placeholder="ejemplo@duocuc.cl"
-            maxLength={100}
-            required
-            value={valores.correo}
-            onChange={cambiar}
-            error={errores.correo}
-            touched={tocados.correo}
-          />
-          <FormField
-            id="fechaNacimiento"
-            label="Fecha de nacimiento"
-            name="fechaNacimiento"
-            type="date"
-            required
-            value={valores.fechaNacimiento}
-            onChange={cambiar}
-            error={errores.fechaNacimiento}
-            touched={tocados.fechaNacimiento}
-          />
-
-          {!esEdicion && (
-            <>
-              <FormField
-                id="password"
-                label="Contraseña"
-                name="password"
-                type="password"
-                maxLength={10}
-                autoComplete="new-password"
-                ayuda="Entre 4 y 10 caracteres."
-                required
-                value={valores.password}
-                onChange={cambiar}
-                error={errores.password}
-                touched={tocados.password}
-              />
-              <FormField
-                id="confirmPassword"
-                label="Confirmar contraseña"
-                name="confirmPassword"
-                type="password"
-                maxLength={10}
-                autoComplete="new-password"
-                required
-                value={valores.confirmPassword}
-                onChange={cambiar}
-                error={errores.confirmPassword}
-                touched={tocados.confirmPassword}
-              />
-            </>
-          )}
-
-          <FormField
-            id="rol"
-            label="Rol"
-            name="rol"
-            as="select"
-            disabled={esPropio}
-            ayuda={esPropio ? "No puedes cambiar tu propio rol." : undefined}
-            value={valores.rol}
-            onChange={cambiar}
-          >
-            <option value="Cliente">Cliente</option>
-            <option value="Administrador">Administrador</option>
-          </FormField>
-          <FormField
-            id="estado"
-            label="Estado"
-            name="estado"
-            as="select"
-            disabled={esPropio}
-            value={valores.estado}
-            onChange={cambiar}
-          >
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
-          </FormField>
-
-          {estado && (
-            <Alert variant={estado.tipo} role="alert">
-              {estado.mensaje}
-            </Alert>
-          )}
-
-          <div className="d-flex gap-2 mt-4">
-            <Button type="submit" variant="success" className="fw-bold">
-              {esEdicion ? "Guardar cambios" : "Crear usuario"}
-            </Button>
-            <Button as={Link} to="/admin/usuarios" variant="outline-secondary">
-              Cancelar
-            </Button>
-          </div>
-        </Form>
-      </Card.Body>
-    </Card>
-  );
-}
+const VACIO = { nombre: "", usuario: "", fechaNacimiento: "", password: "", confirmPassword: "", rol: "Cliente", estado: "Activo" };
 
 export default function UsuarioFormPage() {
   const { id } = useParams();
-  const usuario = id ? usuariosDB.obtener(id) : null;
+  const editando = Boolean(id);
+  const navigate = useNavigate();
+  const { usuario: yo } = useAuth();
+  const existente = useApi(() => (editando ? api.usuarios.obtener(id) : Promise.resolve(null)), [id]);
+  const { valores, errores, tocados, cambiar, establecer, tocarTodo, fijarErroresServidor, esValido } = useFormulario(
+    VACIO,
+    editando ? validarFormularioUsuarioEditar : validarFormularioUsuarioNuevo
+  );
+  const [estado, setEstado] = useState(null);
+  const [guardando, setGuardando] = useState(false);
 
-  if (id && !usuario) {
-    return (
-      <Alert variant="warning">
-        Usuario no encontrado. <Link to="/admin/usuarios">Volver al listado</Link>
-      </Alert>
-    );
-  }
+  useEffect(() => {
+    const u = existente.datos;
+    if (u) establecer({ nombre: u.nombre, usuario: u.usuario, fechaNacimiento: u.fechaNacimiento, rol: u.rol, estado: u.estado });
+  }, [existente.datos, establecer]);
 
-  return <UsuarioForm key={id ?? "nuevo"} usuario={usuario} />;
+  const esUnoMismo = editando && Number(id) === yo?.id;
+
+  const enviar = async (evento) => {
+    evento.preventDefault();
+    tocarTodo();
+    if (!esValido) return;
+    setGuardando(true);
+    setEstado(null);
+    try {
+      const { confirmPassword, ...datos } = valores;
+      if (editando) {
+        const { password, ...sinClave } = datos;
+        await api.usuarios.actualizar(id, sinClave);
+      } else {
+        await api.usuarios.crear(datos);
+      }
+      navigate("/admin/usuarios");
+    } catch (error) {
+      fijarErroresServidor(error.campos);
+      setEstado({ tipo: "danger", mensaje: error.message });
+      setGuardando(false);
+    }
+  };
+
+  const campo = (nombre) => ({
+    id: nombre,
+    name: nombre,
+    value: valores[nombre],
+    onChange: cambiar,
+    error: errores[nombre],
+    touched: tocados[nombre],
+  });
+
+  if (editando && existente.cargando) return <Cargando />;
+  if (existente.error) return <MensajeError error={existente.error} />;
+
+  return (
+    <>
+      <h1 className="h3 mb-3">{editando ? "Editar usuario" : "Nuevo usuario"}</h1>
+      <Form noValidate onSubmit={enviar} className="bg-white border rounded p-3 p-md-4" style={{ maxWidth: 720 }}>
+        <Row>
+          <Col md={6}>
+            <FormField label="Nombre" maxLength={50} required {...campo("nombre")} />
+          </Col>
+          <Col md={6}>
+            <FormField label="Usuario" maxLength={30} required autoComplete="off" {...campo("usuario")} />
+          </Col>
+          <Col md={6}>
+            <FormField label="Fecha de nacimiento" type="date" required {...campo("fechaNacimiento")} />
+          </Col>
+          <Col md={3}>
+            <FormField label="Rol" as="select" disabled={esUnoMismo} {...campo("rol")}>
+              <option>Cliente</option>
+              <option>Administrador</option>
+            </FormField>
+          </Col>
+          <Col md={3}>
+            <FormField label="Estado" as="select" disabled={esUnoMismo} {...campo("estado")}>
+              <option>Activo</option>
+              <option>Inactivo</option>
+            </FormField>
+          </Col>
+          {!editando && (
+            <>
+              <Col md={6}>
+                <FormField label="Contraseña" type="password" maxLength={10} required autoComplete="new-password" {...campo("password")} />
+              </Col>
+              <Col md={6}>
+                <FormField label="Confirmar contraseña" type="password" maxLength={10} required autoComplete="new-password" {...campo("confirmPassword")} />
+              </Col>
+            </>
+          )}
+        </Row>
+        {esUnoMismo && <p className="text-muted small">No puedes cambiar tu propio rol ni tu estado.</p>}
+        {estado && (
+          <Alert variant={estado.tipo} role="alert">
+            {estado.mensaje}
+          </Alert>
+        )}
+        <div className="d-flex gap-2">
+          <Button type="submit" variant="success" disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar"}
+          </Button>
+          <Button as={Link} to="/admin/usuarios" variant="outline-secondary">
+            Cancelar
+          </Button>
+        </div>
+      </Form>
+    </>
+  );
 }

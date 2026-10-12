@@ -2,7 +2,7 @@ import { Col, Container, Row } from "react-bootstrap";
 
 export default function Footer() {
   return (
-    <footer className="bg-dark text-white pt-5 pb-4 mt-5" id="contacto">
+    <footer className="bg-dark text-white pt-5 pb-4 mt-5 no-imprimir">
       <Container className="text-center text-md-start">
         <Row>
           <Col md={4} className="mt-3">
@@ -30,17 +30,17 @@ export default function Footer() {
             <h5 className="text-uppercase mb-4 fw-bold text-success">Síguenos</h5>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <a href="#contacto" className="text-light text-decoration-none">
+                <a href="#/contacto" className="text-light text-decoration-none">
                   <i className="bi bi-facebook me-2 text-primary"></i> Facebook
                 </a>
               </li>
               <li className="mb-2">
-                <a href="#contacto" className="text-light text-decoration-none">
+                <a href="#/contacto" className="text-light text-decoration-none">
                   <i className="bi bi-instagram me-2 text-danger"></i> Instagram
                 </a>
               </li>
               <li className="mb-2">
-                <a href="#contacto" className="text-light text-decoration-none">
+                <a href="#/contacto" className="text-light text-decoration-none">
                   <i className="bi bi-tiktok me-2 text-info"></i> TikTok
                 </a>
               </li>

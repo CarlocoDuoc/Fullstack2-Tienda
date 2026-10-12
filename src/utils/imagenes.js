@@ -1,3 +1,5 @@
+import { BASE_URL } from "../config";
+
 const SVG_PLACEHOLDER =
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">' +
   '<rect width="400" height="300" fill="#e9ecef"/>' +
@@ -11,5 +13,5 @@ export const IMG_PLACEHOLDER = "data:image/svg+xml;charset=UTF-8," + encodeURICo
 export function rutaImagen(ruta) {
   if (!ruta) return IMG_PLACEHOLDER;
   if (/^(data:|https?:)/.test(ruta)) return ruta;
-  return `${import.meta.env.BASE_URL}${ruta.replace(/^\//, "")}`;
+  return `${BASE_URL}${ruta.replace(/^\//, "")}`;
 }

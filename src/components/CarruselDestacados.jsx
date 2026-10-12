@@ -1,9 +1,9 @@
 import { Carousel, Col, Container, Row } from "react-bootstrap";
-import { dividirEnGrupos } from "../utils/busqueda";
+import { dividirEnGrupos } from "../utils/listas";
 import TarjetaProducto from "./TarjetaProducto";
 
 // Muestra los productos en un carrusel, de a 3 por diapositiva (1 por fila en móvil).
-export default function CarruselDestacados({ productos }) {
+export default function CarruselDestacados({ productos, onAgregar }) {
   const grupos = dividirEnGrupos(productos, 3);
   const variasDiapositivas = grupos.length > 1;
 
@@ -15,7 +15,7 @@ export default function CarruselDestacados({ productos }) {
             <Row xs={1} md={3} className="g-4 pb-5 justify-content-center">
               {grupo.map((producto) => (
                 <Col key={producto.id}>
-                  <TarjetaProducto producto={producto} />
+                  <TarjetaProducto producto={producto} onAgregar={onAgregar} />
                 </Col>
               ))}
             </Row>

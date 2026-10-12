@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import AvisoCarrito from "../AvisoCarrito";
 import BarraSuperior from "./BarraSuperior";
 import Footer from "./Footer";
 import MenuPrincipal from "./MenuPrincipal";
@@ -15,6 +16,7 @@ export default function StoreLayout() {
         <Outlet />
       </main>
       <Footer />
+      <AvisoCarrito />
     </div>
   );
 }

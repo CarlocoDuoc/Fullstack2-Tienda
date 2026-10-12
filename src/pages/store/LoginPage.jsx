@@ -7,7 +7,7 @@ import { useFormulario } from "../../hooks/useFormulario";
 import { useRedireccion } from "../../hooks/useRedireccion";
 import { validarFormularioLogin } from "../../utils/validaciones";
 
-const VALORES_INICIALES = { correo: "", password: "" };
+const VALORES_INICIALES = { usuario: "", password: "" };
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -20,12 +20,12 @@ export default function LoginPage() {
     validarFormularioLogin
   );
 
-  const enviar = (evento) => {
+  const enviar = async (evento) => {
     evento.preventDefault();
     tocarTodo();
     if (!esValido) return;
 
-    const resultado = login(valores.correo, valores.password);
+    const resultado = await login(valores.usuario, valores.password);
     if (!resultado.ok) {
       setEstado({ tipo: "danger", mensaje: resultado.error });
       return;
@@ -47,18 +47,18 @@ export default function LoginPage() {
             <Card.Body className="p-4">
               <Form noValidate onSubmit={enviar}>
                 <FormField
-                  id="correo"
-                  label="Correo Electrónico"
-                  name="correo"
-                  type="email"
-                  placeholder="ejemplo@duocuc.cl"
+                  id="usuario"
+                  label="Usuario"
+                  name="usuario"
+                  type="text"
+                  placeholder="admin"
                   maxLength={100}
-                  autoComplete="email"
+                  autoComplete="username"
                   required
-                  value={valores.correo}
+                  value={valores.usuario}
                   onChange={cambiar}
-                  error={errores.correo}
-                  touched={tocados.correo}
+                  error={errores.usuario}
+                  touched={tocados.usuario}
                 />
                 <FormField
                   id="password"
@@ -66,7 +66,6 @@ export default function LoginPage() {
                   name="password"
                   type="password"
                   placeholder="••••••••"
-                  maxLength={10}
                   autoComplete="current-password"
                   required
                   value={valores.password}

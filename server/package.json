@@ -1,0 +1,25 @@
+{
+  "name": "dino-rancho-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API REST de Dino Rancho (Express + PostgreSQL en Neon)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:setup": "node scripts/migrate.js && node scripts/seed.js",
+    "db:reset": "node scripts/migrate.js && node scripts/seed.js --reset",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0"
+  }
+}

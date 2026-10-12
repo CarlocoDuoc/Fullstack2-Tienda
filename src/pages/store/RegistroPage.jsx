@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 import FormField from "../../components/FormField";
 import { useFormulario } from "../../hooks/useFormulario";
 import { useRedireccion } from "../../hooks/useRedireccion";
-import { crearUsuario } from "../../services/usuariosService";
+import { api } from "../../services/api";
 import { validarFormularioRegistro } from "../../utils/validaciones";
 
 const VALORES_INICIALES = {
   nombre: "",
-  correo: "",
+  usuario: "",
   fechaNacimiento: "",
   password: "",
   confirmPassword: "",
@@ -20,12 +20,12 @@ export default function RegistroPage() {
   const redirigir = useRedireccion(1500);
   const [estado, setEstado] = useState(null);
 
-  const { valores, errores, tocados, cambiar, tocarTodo, esValido } = useFormulario(
+  const { valores, errores, tocados, cambiar, tocarTodo, fijarErroresServidor, esValido } = useFormulario(
     VALORES_INICIALES,
     validarFormularioRegistro
   );
 
-  const enviar = (evento) => {
+  const enviar = async (evento) => {
     evento.preventDefault();
     tocarTodo();
     if (!esValido) {
@@ -33,17 +33,16 @@ export default function RegistroPage() {
       return;
     }
 
-    const resultado = crearUsuario({
-      nombre: valores.nombre,
-      correo: valores.correo,
-      fechaNacimiento: valores.fechaNacimiento,
-      password: valores.password,
-      rol: "Cliente",
-      estado: "Activo",
-    });
-
-    if (!resultado.ok) {
-      setEstado({ tipo: "danger", mensaje: resultado.error });
+    try {
+      await api.auth.registro({
+        nombre: valores.nombre,
+        usuario: valores.usuario,
+        fechaNacimiento: valores.fechaNacimiento,
+        password: valores.password,
+      });
+    } catch (error) {
+      fijarErroresServidor(error.campos);
+      setEstado({ tipo: "danger", mensaje: error.message });
       return;
     }
 
@@ -74,18 +73,17 @@ export default function RegistroPage() {
                   touched={tocados.nombre}
                 />
                 <FormField
-                  id="correo"
-                  label="Correo electrónico"
-                  name="correo"
-                  type="email"
-                  placeholder="ejemplo@duocuc.cl"
-                  maxLength={100}
-                  autoComplete="email"
+                  id="usuario"
+                  label="Usuario"
+                  name="usuario"
+                  placeholder="Ej: dino_fan"
+                  maxLength={30}
+                  autoComplete="username"
                   required
-                  value={valores.correo}
+                  value={valores.usuario}
                   onChange={cambiar}
-                  error={errores.correo}
-                  touched={tocados.correo}
+                  error={errores.usuario}
+                  touched={tocados.usuario}
                 />
                 <FormField
                   id="fechaNacimiento"

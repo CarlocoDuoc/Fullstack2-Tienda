@@ -117,3 +117,32 @@
   background-color: var(--dino-verde);
   color: #fff;
 }
+
+/* ---------- Carrito, boleta e impresión ---------- */
+.miniatura {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.boleta {
+  max-width: 800px;
+  margin-inline: auto;
+}
+
+@media print {
+  .no-imprimir,
+  .navbar,
+  footer,
+  .toast-container {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  .boleta {
+    border: 0 !important;
+    max-width: 100%;
+  }
+}

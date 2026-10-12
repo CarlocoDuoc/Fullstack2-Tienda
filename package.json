@@ -1,12 +1,20 @@
 {
   "name": "dino-rancho-react",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "karma start karma.conf.cjs --single-run",
+    "test:watch": "node scripts/vigilar-tests.mjs",
+    "test:cov": "karma start karma.conf.cjs --single-run --coverage",
+    "dev:api": "npm --prefix server run dev",
+    "dev:all": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev\"",
+    "setup": "npm install && npm --prefix server install",
+    "db:reset": "npm --prefix server run db:reset",
+    "dev:fresh": "npm run db:reset && npm run dev:all"
   },
   "dependencies": {
     "bootstrap": "^5.3.3",
@@ -17,7 +25,24 @@
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-react": "^7.24.7",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.0.1",
     "@vitejs/plugin-react": "^4.3.2",
-    "vite": "^5.4.8"
+    "babel-loader": "^9.2.1",
+    "babel-plugin-istanbul": "^7.0.0",
+    "concurrently": "^9.0.1",
+    "jasmine-core": "^4.6.1",
+    "karma": "^6.4.4",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.1",
+    "karma-jasmine": "^5.1.0",
+    "karma-sourcemap-loader": "^0.4.0",
+    "karma-webpack": "^5.0.1",
+    "null-loader": "^4.0.1",
+    "vite": "^5.4.8",
+    "webpack": "^5.95.0"
   }
 }
