@@ -1,0 +1,47 @@
+services:
+  # Base de datos PostgreSQL local (reemplaza a Neon)
+  db:
+    image: postgres:16-alpine
+    container_name: tienda-db
+    environment:
+      POSTGRES_USER: tienda
+      POSTGRES_PASSWORD: tienda
+      POSTGRES_DB: tienda
+    ports:
+      - "5432:5432"          # para conectarte con DBeaver/pgAdmin si quieres
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # los datos sobreviven aunque borres el contenedor
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tienda -d tienda"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  # API Express (carpeta server/)
+  api:
+    build: ./server
+    container_name: tienda-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://tienda:tienda@db:5432/tienda
+      JWT_SECRET: cambia-esto-por-un-texto-largo-y-aleatorio
+      CORS_ORIGIN: http://localhost:8080,http://localhost:5173
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    # Crea las tablas y carga los datos de ejemplo (solo si la base está vacía) y arranca la API
+    command: sh -c "npm run db:setup && npm start"
+
+  # Frontend React compilado y servido con nginx (también redirige /api a la API)
+  web:
+    build: .
+    container_name: tienda-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
