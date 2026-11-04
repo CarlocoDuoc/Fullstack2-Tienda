@@ -38,6 +38,17 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const loginConGoogle = useCallback(async (credential) => {
+    try {
+      const { token, usuario: u } = await api.auth.google(credential);
+      guardarToken(token);
+      setUsuario(u);
+      return { ok: true, usuario: u };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }, []);
+
   const logout = useCallback(() => {
     borrarToken();
     setUsuario(null);
@@ -46,8 +57,8 @@ export function AuthProvider({ children }) {
   const actualizarUsuario = useCallback((u) => setUsuario(u), []);
 
   const value = useMemo(
-    () => ({ usuario, cargando, login, logout, actualizarUsuario, esAdmin: usuario?.rol === "Administrador" }),
-    [usuario, cargando, login, logout, actualizarUsuario]
+    () => ({ usuario, cargando, login, loginConGoogle, logout, actualizarUsuario, esAdmin: usuario?.rol === "Administrador" }),
+    [usuario, cargando, login, loginConGoogle, logout, actualizarUsuario]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

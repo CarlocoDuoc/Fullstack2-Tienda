@@ -19,6 +19,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- El nombre de usuario es único sin distinguir mayúsculas
 CREATE UNIQUE INDEX IF NOT EXISTS usuarios_usuario_uq ON usuarios (LOWER(usuario));
 
+-- Inicio de sesión con Google: los usuarios de Google no tienen contraseña ni fecha de nacimiento
+-- (se completan después en el perfil) y se identifican por su correo / id de Google.
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS correo    VARCHAR(100);
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS google_id TEXT;
+ALTER TABLE usuarios ALTER COLUMN password_hash     DROP NOT NULL;
+ALTER TABLE usuarios ALTER COLUMN fecha_nacimiento  DROP NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS usuarios_google_id_uq ON usuarios (google_id) WHERE google_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS usuarios_correo_uq    ON usuarios (LOWER(correo)) WHERE correo IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS categorias (
   id          SERIAL PRIMARY KEY,
   nombre      VARCHAR(60)  NOT NULL UNIQUE,

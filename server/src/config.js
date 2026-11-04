@@ -22,4 +22,6 @@ export const config = {
     return requerida("JWT_SECRET");
   },
   jwtExpira: "8h",
+  // ID de cliente de Google (público). Si falta, el endpoint /api/auth/google responde 503.
+  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
 };

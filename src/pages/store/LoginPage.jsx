@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Button, Card, Col, Container, Form, Row } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
+import BotonGoogle from "../../components/BotonGoogle";
 import FormField from "../../components/FormField";
 import { useAuth } from "../../context/AuthContext";
 import { useFormulario } from "../../hooks/useFormulario";
@@ -10,7 +11,7 @@ import { validarFormularioLogin } from "../../utils/validaciones";
 const VALORES_INICIALES = { usuario: "", password: "" };
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginConGoogle } = useAuth();
   const ubicacion = useLocation();
   const redirigir = useRedireccion(1200);
   const [estado, setEstado] = useState(null);
@@ -20,21 +21,26 @@ export default function LoginPage() {
     validarFormularioLogin
   );
 
+  // Mismo desenlace para el login normal y el de Google
+  const terminar = (resultado) => {
+    if (!resultado.ok) {
+      setEstado({ tipo: "danger", mensaje: resultado.error });
+      return;
+    }
+    setEstado({ tipo: "success", mensaje: `¡Bienvenido/a, ${resultado.usuario.nombre}! Redirigiendo...` });
+    const destino = resultado.usuario.rol === "Administrador" ? "/admin" : ubicacion.state?.desde ?? "/";
+    redirigir(destino);
+  };
+
   const enviar = async (evento) => {
     evento.preventDefault();
     tocarTodo();
     if (!esValido) return;
 
-    const resultado = await login(valores.usuario, valores.password);
-    if (!resultado.ok) {
-      setEstado({ tipo: "danger", mensaje: resultado.error });
-      return;
-    }
-
-    setEstado({ tipo: "success", mensaje: `¡Bienvenido/a, ${resultado.usuario.nombre}! Redirigiendo...` });
-    const destino = resultado.usuario.rol === "Administrador" ? "/admin" : ubicacion.state?.desde ?? "/";
-    redirigir(destino);
+    terminar(await login(valores.usuario, valores.password));
   };
+
+  const entrarConGoogle = async (credential) => terminar(await loginConGoogle(credential));
 
   return (
     <Container className="my-5">
@@ -89,6 +95,13 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </Form>
+
+              <div className="d-flex align-items-center gap-2 my-3 text-muted small">
+                <hr className="flex-fill m-0" />
+                <span>o</span>
+                <hr className="flex-fill m-0" />
+              </div>
+              <BotonGoogle onCredencial={entrarConGoogle} />
             </Card.Body>
           </Card>
         </Col>

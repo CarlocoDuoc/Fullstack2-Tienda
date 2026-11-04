@@ -94,6 +94,7 @@ export const api = {
   auth: {
     registro: (datos) => post("/api/auth/registro", datos),
     login: (datos) => post("/api/auth/login", datos),
+    google: (credential) => post("/api/auth/google", { credential }),
     me: () => get("/api/auth/me"),
     perfil: (datos) => put("/api/auth/perfil", datos),
   },

@@ -75,3 +75,15 @@ test("armarLineas usa precio de la base y valida stock", () => {
 test("calcularTotal suma precio × cantidad", () => {
   assert.equal(calcularTotal([{ precioUnitario: 500, cantidad: 2 }, { precioUnitario: 100, cantidad: 1 }]), 1100);
 });
+
+test("el usuario generado desde el correo de Google es válido y único por intento", async () => {
+  const { candidatoUsuario, usuarioBaseDesdeCorreo } = await import("../src/utils/google.js");
+  assert.equal(usuarioBaseDesdeCorreo("ana.soto@gmail.com"), "ana.soto");
+  assert.equal(usuarioBaseDesdeCorreo("a+b@gmail.com"), "abuser");
+  assert.equal(usuarioBaseDesdeCorreo("x@gmail.com"), "xuser");
+  const largo = usuarioBaseDesdeCorreo(`${"a".repeat(40)}@gmail.com`);
+  assert.equal(largo.length, 24);
+  assert.equal(candidatoUsuario("ana", 0), "ana");
+  assert.equal(candidatoUsuario("ana", 3), "ana3");
+  for (const c of ["ana.soto", "abuser", largo, candidatoUsuario(largo, 19)]) assert.equal(validarUsuario(c), "");
+});

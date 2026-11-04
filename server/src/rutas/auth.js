@@ -1,8 +1,10 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
+import { config } from "../config.js";
 import { consultar } from "../db.js";
 import { autenticado, firmarToken } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../utils/errores.js";
+import { candidatoUsuario, usuarioBaseDesdeCorreo, verificarTokenGoogle } from "../utils/google.js";
 import { COLUMNAS_USUARIO } from "../utils/mapeos.js";
 import {
   soloErrores,
@@ -56,10 +58,59 @@ router.post(
     ]);
     const fila = rows[0];
     // Mismo mensaje si el usuario no existe o la clave es incorrecta (no revela qué usuarios existen)
-    const coincide = fila ? await bcrypt.compare(password, fila.password_hash) : false;
+    const coincide = fila?.password_hash ? await bcrypt.compare(password, fila.password_hash) : false;
     if (!coincide) throw new ApiError(401, "Usuario o contraseña incorrectos. Verifica tus datos.");
     if (fila.estado !== "Activo") throw new ApiError(403, "Tu cuenta está inactiva. Contacta a un administrador.");
 
+    res.json({ token: firmarToken(fila), usuario: await obtenerUsuario(fila.id) });
+  })
+);
+
+// POST /api/auth/google  { credential }  (ID token entregado por el botón de Google)
+// Si la cuenta de Google ya está vinculada inicia sesión; si no, crea un Cliente nuevo.
+router.post(
+  "/google",
+  asyncHandler(async (req, res) => {
+    const { credential } = req.body ?? {};
+    if (typeof credential !== "string" || !credential) throw new ApiError(400, "Falta la credencial de Google.");
+    if (!config.googleClientId) throw new ApiError(503, "El inicio de sesión con Google no está configurado en el servidor.");
+
+    let google;
+    try {
+      google = await verificarTokenGoogle(credential, config.googleClientId);
+    } catch {
+      throw new ApiError(401, "No se pudo verificar tu cuenta de Google. Inténtalo de nuevo.");
+    }
+    if (!google.email || !google.emailVerificado) throw new ApiError(401, "Tu correo de Google no está verificado.");
+
+    // 1) ¿ya entró antes con esta cuenta de Google?
+    let fila = (await consultar("SELECT id, estado, rol FROM usuarios WHERE google_id = $1", [google.sub])).rows[0];
+
+    // 2) ¿existe una cuenta con ese correo (verificado por Google)? Se vincula.
+    if (!fila) {
+      fila = (await consultar("SELECT id, estado, rol FROM usuarios WHERE LOWER(correo) = LOWER($1)", [google.email])).rows[0];
+      if (fila) await consultar("UPDATE usuarios SET google_id = $1 WHERE id = $2", [google.sub, fila.id]);
+    }
+
+    // 3) Cuenta nueva: siempre rol Cliente, usuario generado desde el correo
+    if (!fila) {
+      const base = usuarioBaseDesdeCorreo(google.email);
+      const nombre = texto(google.nombre || base).slice(0, 50);
+      const apellidos = texto(google.apellidos).slice(0, 50);
+      for (let intento = 0; intento < 20 && !fila; intento += 1) {
+        const { rows } = await consultar(
+          `INSERT INTO usuarios (nombre, apellidos, usuario, correo, google_id, rol, estado)
+           VALUES ($1, $2, $3, $4, $5, 'Cliente', 'Activo')
+           ON CONFLICT DO NOTHING
+           RETURNING id, estado, rol`,
+          [nombre, apellidos, candidatoUsuario(base, intento), google.email.slice(0, 100), google.sub]
+        );
+        fila = rows[0];
+      }
+      if (!fila) throw new ApiError(409, "No se pudo crear tu cuenta. Inténtalo de nuevo.");
+    }
+
+    if (fila.estado !== "Activo") throw new ApiError(403, "Tu cuenta está inactiva. Contacta a un administrador.");
     res.json({ token: firmarToken(fila), usuario: await obtenerUsuario(fila.id) });
   })
 );
@@ -95,7 +146,9 @@ router.put(
 
     if (passwordNueva) {
       const { rows } = await consultar("SELECT password_hash FROM usuarios WHERE id = $1", [req.usuario.id]);
-      const correcta = await bcrypt.compare(passwordActual ?? "", rows[0].password_hash);
+      const hashActual = rows[0].password_hash;
+      // Las cuentas creadas con Google no tienen contraseña: pueden definir una sin indicar la actual.
+      const correcta = hashActual ? await bcrypt.compare(passwordActual ?? "", hashActual) : true;
       if (!correcta) {
         throw new ApiError(400, "La contraseña actual no es correcta.", { passwordActual: "La contraseña actual no es correcta." });
       }
